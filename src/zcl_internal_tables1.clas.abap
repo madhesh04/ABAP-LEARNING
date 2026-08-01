@@ -7,19 +7,30 @@ CLASS zcl_internal_tables1 DEFINITION
 
     INTERFACES if_oo_adt_classrun .
 
-    " Type Definition
+*-----------------------------------------------------------------------
+* Structure Definition
+*-----------------------------------------------------------------------
     TYPES:
-       BEGIN OF ty_student,
-          studentid type i,
-          studentname TYPE string,
-          course TYPE string,
-          marks TYPE i,
+      BEGIN OF ty_employee,
+        empid   TYPE i,
+        empname TYPE string,
+        empdept TYPE string,
+        salary  TYPE p LENGTH 8 DECIMALS 2,
+      END OF ty_employee.
 
-        END OF ty_student.
+*-----------------------------------------------------------------------
+* Work Area & Internal Table
+*-----------------------------------------------------------------------
+    DATA ls_employee TYPE ty_employee.
+    DATA lt_employee TYPE SORTED TABLE OF ty_employee WITH UNIQUE KEY empid.
 
+    "Hash Table
+    DATA lt_employee1 TYPE HASHED TABLE OF ty_employee WITH UNIQUE KEY empid.
 
-    DATA ls_student TYPE ty_student.
-    DATA lt_student TYPE TABLE of ty_student.
+    "with empty key. -> NO KEY DEFINED AT ALL
+    "with unique key empid. -> ENFOIRCES THE TABLE TO USE THE GIVEN COLUMN AS A KEY
+    "with default key.USIGING THE NON-NUMERIC ELEMENTARY FILEDS AS KEY
+    "with non-unique key empid. -> ALLOW DUPLICATE KEYS, INDEXED LOOKUP.
 
   PROTECTED SECTION.
   PRIVATE SECTION.
@@ -32,42 +43,129 @@ CLASS zcl_internal_tables1 IMPLEMENTATION.
 
   METHOD if_oo_adt_classrun~main.
 
-      "Student 1
-      ls_student-studentid = 101.
-      ls_student-studentname = 'Karan'.
-      ls_student-course = 'ABAP'.
-      ls_student-marks = 98.
+*-----------------------------------------------------------------------
+* Employee 1
+*-----------------------------------------------------------------------
+    ls_employee-empid   = 1002.
+    ls_employee-empname = 'Rahul'.
+    ls_employee-empdept = 'SAP'.
+    ls_employee-salary  = '15000'.
 
-      APPEND ls_student to lt_student.
-
-      "Student 2
-      ls_student-studentid = 102.
-      ls_student-studentname = 'Harsh'.
-      ls_student-course = 'UI5'.
-      ls_student-marks = 90.
-
-      APPEND ls_student to lt_student.
+    "APPEND ls_employee TO lt_employee.
+    INSERT ls_employee INTO TABLE lt_employee.
+    INSERT ls_employee INTO TABLE lt_employee1.
 
 
-      "Student 3
-      ls_student-studentid = 103.
-      ls_student-studentname = 'PRATHAM'.
-      ls_student-course = 'CDS'.
-      ls_student-marks = 95.
+*-----------------------------------------------------------------------
+* Employee 2
+*-----------------------------------------------------------------------
+    ls_employee-empid   = 1003.
+    ls_employee-empname = 'Priya'.
+    ls_employee-empdept = 'HR'.
+    ls_employee-salary  = '12000'.
 
-      APPEND ls_student to lt_student.
+    "APPEND ls_employee TO lt_employee.
+    INSERT ls_employee INTO TABLE lt_employee.
+    INSERT ls_employee INTO TABLE lt_employee1.
 
-      LOOP AT lt_student into ls_student.
+    " Duplicate values
+
+*-----------------------------------------------------------------------
+* Employee 3
+*-----------------------------------------------------------------------
+    ls_employee-empid   = 1001.
+    ls_employee-empname = 'David'.
+    ls_employee-empdept = 'Finance'.
+    ls_employee-salary  = '18000'.
+
+    "APPEND ls_employee TO lt_employee.
+    INSERT ls_employee INTO TABLE lt_employee.
+    INSERT ls_employee INTO TABLE lt_employee1.
 
 
-      out->write( 'Student Information using the loop At..' ).
-      out->write( | { ls_student-studentid }  { ls_student-studentname } { ls_student-course } { ls_student-marks } | ).
+**********************************************************************
+*Displaying the Table
+**********************************************************************
 
-      endloop.
+    out->write( '=================== Initial Sorted Table===========================' ).
+
+    LOOP AT lt_employee INTO ls_employee.
+
+      out->write( |{ ls_employee-empid } { ls_employee-empname } { ls_employee-empdept } { ls_employee-salary } | ).
+
+    ENDLOOP.
+
+**********************************************************************
+    "Operations on the Sorted Table..
 
 
-      READ TABLE lt_student into DATA(ls_student) INDEX 1.
+**********************************************************************
+    " Read Operation
+**********************************************************************
 
+    out->write( '' ).
+
+    out->write( '============Read Employee=========' ).
+
+    READ TABLE lt_employee INTO ls_employee WITH KEY empid = 1001.
+
+    IF sy-subrc = 0.
+
+      out->write( |Employee Name: { ls_employee-empname }| ).
+
+    ELSE.
+
+      out->write( 'Employee Not Found' ).
+
+
+    ENDIF.
+
+
+
+**********************************************************************
+* Modify Operation
+**********************************************************************
+
+    out->write( '============Modify Employee=========' ).
+
+    READ TABLE lt_employee INTO ls_employee WITH KEY empid = 1003.
+
+    IF sy-subrc = 0.
+
+      ls_employee-salary = '30000'.
+
+      MODIFY TABLE lt_employee FROM ls_employee.
+
+      out->write( '' ).
+      out->write( 'The employee data has been modified successfully' ).
+
+
+    ENDIF.
+
+**********************************************************************
+    " Delete Operation
+**********************************************************************
+
+    out->write( '' ).
+
+    DELETE TABLE lt_employee FROM VALUE #( empid = 1003 ).
+
+    out->write( '' ).
+    out->write( 'The employee data has been deleted successfully.' ).
+
+
+**********************************************************************
+    " Display Final Table
+**********************************************************************
+
+   " LOOP AT lt_employee INTO ls_employee.
+
+    "  out->write( | { ls_employee-empid } { ls_employee-empname } { ls_employee-empdept } { ls_employee-salary } | ).
+
+   " ENDLOOP.
+
+
+   out->write( lt_employee ).
 
 
   ENDMETHOD.
